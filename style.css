@@ -4,3 +4,8 @@
 .logo-fallback{font-size:clamp(100px,13vw,180px);line-height:1;font-weight:950;color:#d8e8ff;text-shadow:0 0 28px #2585ff;}
 .gamer-logo-image{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;display:block;}
 .gamer-logo-orb.logo-loaded .logo-fallback{display:none;}
+
+/* Identità visiva e link email */
+#contatti a{color:#82bdff;text-decoration:underline;text-underline-offset:4px}
+.gamer-logo-orb{background:white;box-shadow:0 0 80px #2674ff42}
+.gamer-logo-image{border-radius:50%;}
