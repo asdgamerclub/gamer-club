@@ -1,31 +1,24 @@
-# A.S.D. Gamer Club
+# A.S.D. Gamer Club — sito e anteprima card
 
-Sito informativo ufficiale di A.S.D. Gamer Club. Homepage statica pronta per GitHub Pages.
+Progetto pubblicato su GitHub Pages: https://asdgamerclub.github.io/gamer-club/
 
-## Pubblica il sito gratuitamente
+## Pagine
+- `index.html`: sito ufficiale, logo originale e contatti forniti dall'associazione.
+- `card.html`: anteprima interattiva della futura Gamer Club Card.
+- `card.js`: demo solo su dati inventati nel browser; 10 partite = 1 premio, premi cumulativi e riscatti simulati.
+- `database/schema.sql`: **bozza di database Supabase/Postgres**, con membership, ruoli operatore, storico immutabile dei movimenti e RPC per punti/riscatti. Non è stato ancora installato su un database.
 
-1. Apri **Settings → Pages** nel repository GitHub.
-2. In **Build and deployment**, seleziona **Deploy from a branch**.
-3. Imposta **Branch: main** e **Folder: /(root)**.
-4. Salva. Il sito potrà essere raggiunto su **https://asdgamerclub.github.io/gamer-club/** quando il deployment sarà completato.
+## Importante: non è ancora un servizio per i soci
+La demo non raccoglie dati personali, non genera QR validi, non salva punti su un server e non emette pass Wallet. Non utilizzare la demo per iscrizioni o premi reali. Non inserire dati di soci sul repository pubblico.
 
-## Cosa è disponibile ora
+## Attivazione futura
+1. Predisporre informativa sul trattamento dei dati, base giuridica dell'adesione e modulistica associativa.
+2. Creare progetto Supabase, configurare autenticazione e applicare/validare schema in ambiente di test.
+3. Costruire modulo di registrazione con conferma e ammissione socio, pannello amministrativo con login.
+4. Rendere univoci i QR, attivare funzioni di scansione, audit, protezione antiabuso e procedure di recupero.
+5. Configurare Apple Developer Pass Type ID / certificato e Google Wallet Issuer, dopo le rispettive approvazioni.
+6. Aggiungere servizio sicuro di emissione/aggiornamento pass senza caricare credenziali sul repository.
 
-- Homepage responsive in italiano, colori blu e grigio.
-- Presentazione attività e anteprima della futura Gamer Club Card.
-- Nessun modulo di raccolta dati e nessun database pubblico.
+Regola fidelity prevista: 1 partita pagata registrata dall'operatore = 1 punto; dopo 10 punti si matura 1 partita gratis per due giocatori; premi accumulabili, riscatto confermato da operatore.
 
-## Cosa NON è ancora attivo
-
-- Registrazione soci e tessera valida.
-- Programma punti, premi o QR identificativi.
-- Apple Wallet e Google Wallet.
-- Pannello amministrativo.
-
-## Sicurezza
-
-Non inserire in questo repository pubblico dati personali dei soci, password, token, certificati Apple o chiavi Google. Il futuro sistema soci richiederà autenticazione operatori, un database sicuro, minimizzazione dati e informativa privacy.
-
-## Da confermare
-
-Logo originale, link social ufficiali, recapiti e orari; dominio personalizzato; configurazione backend e account Wallet.
+Contatti sito: asdgamerclub@gmail.com — Via Erik Mutarelli 2, 4, 6, 82100 Benevento (BN).
