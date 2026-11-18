@@ -2,7 +2,7 @@
 const $=id=>document.getElementById(id);
 $('year').textContent=new Date().getFullYear();
 const today=new Date();
-const maxDate=today.toLocaleDateString('en-CA');
+const maxDate=[today.getFullYear(),String(today.getMonth()+1).padStart(2,'0'),String(today.getDate()).padStart(2,'0')].join('-');
 $('nascita').max=maxDate;
 function update(){const first=$('nome').value.trim();const last=$('cognome').value.trim();$('card-name').textContent=(first+' '+last).trim()||'NOME COGNOME';const val=$('nascita').value;const d=val?new Date(val+'T00:00:00'):null;$('card-dob').textContent=d&&!Number.isNaN(d.getTime())?new Intl.DateTimeFormat('it-IT',{day:'2-digit',month:'2-digit',year:'numeric'}).format(d):'-- / -- / ----';}
 for(const key of ['nome','cognome','nascita'])$(key).addEventListener('input',update);
