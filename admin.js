@@ -20,26 +20,50 @@ async function record(kind){if(!selected||!lastToken)return;const name=selected.
 $('add').addEventListener('click',()=>record('paid_game'));$('redeem').addEventListener('click',()=>record('reward_redeemed'));
 init();
 
-async function stopScanner(){if(scannerTimer){clearInterval(scannerTimer);scannerTimer=null;}if(scannerStream){for(const track of scannerStream.getTracks())track.stop();scannerStream=null;}const v=$('scan-video');v.srcObject=null;$('scanner').hidden=true;$('scan-stop').hidden=true;$('scan-start').hidden=false;scannerBusy=false;}
+async function stopScanner(){
+ if(scannerTimer){clearInterval(scannerTimer);scannerTimer=null;}
+ if(scannerStream){for(const track of scannerStream.getTracks())track.stop();scannerStream=null;}
+ const v=$('scan-video');v.pause();v.srcObject=null;
+ $('scanner').hidden=true;$('scan-stop').hidden=true;$('scan-start').hidden=false;scannerBusy=false;
+}
 $('scan-start').addEventListener('click',async()=>{
- if(!('BarcodeDetector' in window)){notice('Questo browser non supporta la lettura QR integrata. Usa Chrome o Edge aggiornato, oppure incolla il token manualmente.','error');return;}
+ if(!navigator.mediaDevices?.getUserMedia){
+  notice('La fotocamera non è disponibile in questo browser o non è autorizzata. Usa HTTPS e consenti la fotocamera nelle impostazioni.','error');return;
+ }
+ $('scan-start').disabled=true;
  try{
-  const detector=new BarcodeDetector({formats:['qr_code']});
-  scannerStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false});
-  $('scan-video').srcObject=scannerStream;
-  await $('scan-video').play();$('scanner').hidden=false;$('scan-start').hidden=true;$('scan-stop').hidden=false;
-  notice('Fotocamera attiva: inquadra il QR del socio.');
+  // jsQR legge i pixel dei fotogrammi e funziona anche dove BarcodeDetector manca (es. iOS).
+  const jsqrModule=await import('https://esm.sh/jsqr@1.4.0');
+  const jsQR=jsqrModule.default;
+  if(typeof jsQR!=='function')throw Error('Lettore QR non disponibile');
+  scannerStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}},audio:false});
+  const v=$('scan-video');v.srcObject=scannerStream;
+  $('scanner').hidden=false;$('scan-start').hidden=true;$('scan-stop').hidden=false;
+  await v.play();
+  const canvas=document.createElement('canvas');const context=canvas.getContext('2d',{willReadFrequently:true});
+  if(!context)throw Error('Impossibile inizializzare la lettura QR');
+  notice('Fotocamera attiva: inquadra il codice QR del socio.');
   scannerTimer=setInterval(async()=>{
-   if(scannerBusy||$('scan-video').readyState<2)return;
+   if(scannerBusy||v.readyState<2||!v.videoWidth||!v.videoHeight)return;
    scannerBusy=true;
    try{
-    const codes=await detector.detect($('scan-video'));
-    const found=codes.map(x=>(x.rawValue||'').trim()).find(x=>uuid.test(x));
-    if(found){await stopScanner();$('token').value=found;$('search-form').requestSubmit();}
-   }catch(e){/* La scansione può fallire sui singoli fotogrammi. */}
+    const width=Math.min(v.videoWidth,900);
+    const height=Math.round(v.videoHeight*width/v.videoWidth);
+    if(canvas.width!==width||canvas.height!==height){canvas.width=width;canvas.height=height;}
+    context.drawImage(v,0,0,width,height);
+    const pixels=context.getImageData(0,0,width,height);
+    const foundQR=jsQR(pixels.data,width,height,{inversionAttempts:'attemptBoth'});
+    const token=(foundQR?.data||'').trim();
+    if(uuid.test(token)){
+      await stopScanner();
+      $('token').value=token;
+      $('search-form').requestSubmit();
+    }
+   }catch(e){/* Ignora fotogrammi non leggibili. */}
    finally{scannerBusy=false;}
-  },450);
- }catch(e){await stopScanner();notice('Impossibile aprire la fotocamera: '+e.message,'error');}
+  },280);
+ }catch(e){await stopScanner();notice('Scansione non avviata: '+e.message+'. Controlla permesso fotocamera e connessione.','error');}
+ finally{$('scan-start').disabled=false;}
 });
 $('scan-stop').addEventListener('click',()=>stopScanner());
 window.addEventListener('pagehide',()=>stopScanner());
