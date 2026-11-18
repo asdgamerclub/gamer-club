@@ -8,7 +8,7 @@ function notice(message,type=''){const n=$('notice');n.className='notice '+type;
 function show(id){if(id!=='dashboard')stopScanner();for(const k of ['setup','login','dashboard'])$(k).hidden=k!==id;if(id!=='dashboard')$('member').hidden=true;}
 function config(){try{return JSON.parse(localStorage.getItem(store))}catch{return null}}
 function useConfig(c){const u=new URL(c.url);if(u.protocol!=='https:'||!u.hostname.endsWith('.supabase.co')||u.username||u.password||u.search||u.hash)throw Error('Usa l’URL HTTPS del progetto Supabase.');if(!c.key||!(/^(sb_publishable_|eyJ)/.test(c.key)))throw Error('Usa soltanto la chiave publishable o anon public. Non inserire chiavi segrete.');client=createClient(u.origin,c.key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});return {url:u.origin,key:c.key};}
-async function verify(){const {data:{user},error}=await client.auth.getUser();if(error||!user){show('login');return;}const {data, error:opError}=await client.rpc('gc_is_operator');if(opError||data!==true){await client.auth.signOut();selected=null;show('login');notice('Account non autorizzato come operatore.','error');return;}show('dashboard');notice('Accesso operatore autorizzato.','success');}
+async function verify(){const {data:{user},error}=await client.auth.getUser();if(error||!user){show('login');return;}const {data, error:opError}=await client.rpc('gc_is_operator');if(opError||data!==true){await client.auth.signOut();selected=null;show('login');notice('Account non autorizzato come operatore.','error');return;}show('dashboard');notice('Accesso operatore autorizzato.','success');loadMembers();}
 async function init(){const c=config();if(!c){show('setup');return}try{useConfig(c);$('url').value=c.url;$('key').value=c.key;await verify();}catch(e){show('setup');notice(e.message,'error');}}
 $('config-form').addEventListener('submit',async e=>{e.preventDefault();try{const c=useConfig({url:$('url').value.trim(),key:$('key').value.trim()});localStorage.setItem(store,JSON.stringify(c));notice('Configurazione pubblica salvata in questo browser. Ora accedi.');await verify();}catch(err){notice(err.message,'error');}});
 $('change').addEventListener('click',async()=>{if(client)await client.auth.signOut();client=null;selected=null;show('setup');});
@@ -79,3 +79,66 @@ $('qr-show').addEventListener('click',async()=>{
  }catch(e){notice('Impossibile generare il QR nel browser: '+e.message,'error');}
 });
 $('qr-hide').addEventListener('click',()=>{$('qr-output').hidden=true;$('qr-output').replaceChildren();$('qr-show').hidden=false;$('qr-hide').hidden=true;});
+
+function membersFeedback(message){$('members-feedback').textContent=message;}
+async function loadMembers(){
+ if(!client)return;
+ const container=$('members-list');container.replaceChildren();
+ const {data,error}=await client.rpc('gc_operator_list_members',{p_limit:50});
+ if(error){membersFeedback('Per attivare la gestione richieste, esegui in Supabase il file database/migrazione_v2_iscrizioni.sql. Dettaglio: '+error.message);return;}
+ if(!data?.length){membersFeedback('Nessuna richiesta presente.');return;}
+ membersFeedback(data.length+' schede disponibili.');
+ for(const m of data){
+  const row=document.createElement('div');row.className='member-row';
+  const info=document.createElement('div');
+  const title=document.createElement('strong');title.textContent=m.first_name+' '+m.last_name+' · #'+m.member_number;
+  const subtitle=document.createElement('p');subtitle.textContent='Stato: '+m.status+' · Nascita: '+(m.birth_date||'non indicata');
+  info.append(title,subtitle);row.append(info);
+  const actions=document.createElement('div');actions.className='actions';
+  const open=document.createElement('button');open.type='button';open.className='secondary';open.textContent='Apri scheda';
+  open.addEventListener('click',()=>{
+   $('token').value=m.qr_token;
+   $('search-form').requestSubmit();
+   $('dashboard').scrollIntoView({behavior:'smooth',block:'start'});
+  });
+  actions.append(open);
+  if(m.status==='pending'){
+   const approve=document.createElement('button');approve.type='button';approve.textContent='Approva socio';
+   approve.addEventListener('click',async()=>{
+    if(!m.birth_date){membersFeedback('Data di nascita assente: integra la pratica prima di approvare.');return;}
+    const dob=new Date(m.birth_date+'T12:00:00');
+    const cutoff=new Date();cutoff.setFullYear(cutoff.getFullYear()-18);
+    const minor=dob>cutoff;
+    if(!window.confirm('Confermi che sono stati verificati i requisiti di ammissione e i documenti di '+m.first_name+' '+m.last_name+'?'))return;
+    let guardian=false;
+    if(minor){if(!window.confirm('Il richiedente è minorenne: confermi di aver verificato la documentazione del genitore/tutore?'))return;guardian=true;}
+    approve.disabled=true;
+    const {error}=await client.rpc('gc_operator_review_member',{p_member:m.member_id,p_status:'active',p_guardian_verified:guardian});
+    if(error){membersFeedback('Approvazione non riuscita: '+error.message);approve.disabled=false;return;}
+    await loadMembers();membersFeedback('Socio approvato. Puoi aprire la scheda e mostrare il QR.');
+   });
+   actions.append(approve);
+  }
+  row.append(actions);container.append(row);
+ }
+}
+$('create-member').addEventListener('submit',async e=>{
+ e.preventDefault();if(!client)return;
+ const birth=$('new-birth').value;
+ const now=new Date(),today=[now.getFullYear(),String(now.getMonth()+1).padStart(2,'0'),String(now.getDate()).padStart(2,'0')].join('-');
+ if(!birth||birth>today||birth<'1900-01-01'){membersFeedback('Controlla la data di nascita.');return;}
+ if(!window.confirm('Hai acquisito la richiesta con l’informativa privacy e la documentazione associativa necessaria?'))return;
+ const btn=$('create-submit');btn.disabled=true;
+ try{
+  const {data,error}=await client.rpc('gc_operator_create_member',{
+   p_first_name:$('new-first').value.trim(),p_last_name:$('new-last').value.trim(),
+   p_birth_date:birth,p_residence:$('new-residence').value.trim()||null,
+   p_phone:$('new-phone').value.trim()||null,p_email:$('new-email').value.trim()||null
+  });
+  if(error)throw error;
+  $('create-member').reset();
+  await loadMembers();membersFeedback('Richiesta inserita in attesa. Numero #'+data[0].member_number+'.');
+ }catch(error){membersFeedback('Richiesta non registrata: '+error.message);}
+ finally{btn.disabled=false;}
+});
+$('reload-members').addEventListener('click',loadMembers);
