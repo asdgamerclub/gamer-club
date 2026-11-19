@@ -1,6 +1,6 @@
-// Configurazione PUBBLICA. Inserire solo la chiave publishable o anon di Supabase.
-// Non inserire mai service_role o sb_secret_ in questo file.
+// Configurazione PUBBLICA del progetto Supabase Gamer Club.
+// Utilizzare esclusivamente publishable/anon key, mai secret o service_role.
 window.GC_GALLERY_CONFIG = {
   url: "https://vbymfpjistibabzijahi.supabase.co",
-  publishableKey: ""
+  publishableKey: "sb_publishable_vEyF0m37DUvl0JHre2TDoQ_7v5zPPf9"
 };
