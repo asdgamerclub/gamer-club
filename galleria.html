@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="Galleria fotografica A.S.D. Gamer Club Benevento. Scopri le foto e condividi i tuoi momenti gaming.">
+<meta name="theme-color" content="#09101b">
+<title>Galleria fotografica | ASD Gamer Club</title>
+<link rel="icon" href="LOGO%20PER%20INSTAGRAM.jpg">
+<link rel="stylesheet" href="galleria.css?v=1">
+</head>
+<body>
+<header class="gallery-nav">
+  <a href="index.html" class="gallery-brand"><img src="LOGO%20PER%20INSTAGRAM.jpg" alt=""><span>A.S.D. <strong>GAMER CLUB</strong></span></a>
+  <nav><a href="index.html#esperienze">Esperienze</a><a href="iscrizione.html">Gamer Club Card</a><a href="index.html#contatti">Contatti</a></nav>
+  <a class="gallery-back" href="index.html">TORNA AL SITO ↗</a>
+</header>
+<main>
+<section class="gallery-hero">
+  <p class="gallery-eyebrow">LE FOTO DEL GAMER CLUB</p>
+  <h1>VIVI IL GIOCO.<br><em>CONDIVIDI IL MOMENTO.</em></h1>
+  <p>Le sfide migliori meritano di essere ricordate. Qui trovi gli scatti della nostra community, condivisi dopo la verifica del personale.</p>
+  <a href="#condividi" class="gallery-hero-cta">AGGIUNGI UNA FOTO <span aria-hidden="true">↗</span></a>
+</section>
+<section class="gallery-public" id="foto">
+  <div class="gallery-section-title"><div><p>LA NOSTRA COMMUNITY</p><h2>Galleria.</h2></div><button type="button" id="gallery-refresh">Aggiorna foto ↻</button></div>
+  <div id="gallery-grid" class="gallery-grid" aria-live="polite"></div>
+  <p id="gallery-status" role="status" class="gallery-status">Caricamento delle foto…</p>
+</section>
+<section id="condividi" class="gallery-upload-section">
+  <div class="gallery-upload-intro"><p class="gallery-eyebrow">SCATTA. CONDIVIDI. GIOCA.</p><h2>AGGIUNGI LA<br><em>TUA FOTO.</em></h2>
+  <p>Hai fotografato una partita, un torneo o una serata al Gamer Club? Invia lo scatto: il personale lo controlla prima di renderlo visibile nella galleria.</p>
+  <div class="gallery-safety">Sono ammesse fotografie di cui possiedi i diritti e per le quali hai il permesso delle persone riconoscibili. Per i minorenni serve l'autorizzazione di chi esercita la responsabilità genitoriale. Non caricare documenti, dati personali o immagini offensive.</div></div>
+  <div class="gallery-upload-panel">
+    <div id="gallery-connection" class="gallery-connection" hidden>Il caricamento fotografico è temporaneamente indisponibile. Ripassa più tardi.</div>
+    <div id="gallery-user" hidden><div class="gallery-signed"><span id="gallery-who"></span><button type="button" id="gallery-signout">Esci</button></div></div>
+    <div id="gallery-login">
+      <h3>Accedi per condividere</h3>
+      <p>Inserisci la tua email. Riceverai un link per confermare l'accesso. Se sei un operatore, puoi usare le credenziali del pannello cassa.</p>
+      <form id="gallery-email-form"><label for="gallery-email">La tua email</label><input type="email" id="gallery-email" autocomplete="email" required placeholder="nome@email.it"><button type="submit">RICEVI IL LINK DI ACCESSO</button></form>
+      <details class="gallery-operator"><summary>Accesso operatore</summary><form id="gallery-password-form"><label for="gallery-operator-email">Email operatore</label><input type="email" id="gallery-operator-email" autocomplete="username" placeholder="asdgamerclub@gmail.com" required><label for="gallery-password">Password</label><input type="password" id="gallery-password" autocomplete="current-password" required><button type="submit">ACCEDI COME OPERATORE</button></form></details>
+    </div>
+    <form id="gallery-photo-form" hidden>
+      <h3>Invia una fotografia</h3>
+      <label for="gallery-photo">Scegli una foto (JPG, PNG, WEBP · max 4 MB)</label>
+      <input id="gallery-photo" type="file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" required>
+      <img id="gallery-preview" alt="Anteprima della foto selezionata" hidden>
+      <label for="gallery-caption">Didascalia (facoltativa)</label>
+      <input id="gallery-caption" type="text" maxlength="160" placeholder="La sfida di ieri sera…">
+      <label class="gallery-consent"><input id="gallery-consent" type="checkbox" required> <span>Confermo di avere i diritti sulla fotografia e le autorizzazioni delle persone riconoscibili, inclusi eventuali minorenni, per la pubblicazione nella galleria.</span></label>
+      <button type="submit" id="gallery-submit">INVIA PER APPROVAZIONE <span>↗</span></button>
+    </form>
+    <p id="gallery-feedback" class="gallery-feedback" role="status" aria-live="polite"></p>
+  </div>
+</section>
+</main>
+<footer class="gallery-footer"><img src="LOGO%20PER%20INSTAGRAM.jpg" alt=""><div><b>ASD GAMER CLUB</b><p>Via Erik Mutarelli 2, 4, 6 · Benevento</p></div><span>© <span id="gallery-year"></span> Entra nel gioco.</span><a href="index.html">HOME ↗</a></footer>
+<script src="galleria-config.js"></script>
+<script type="module" src="galleria.js"></script>
+</body>
+</html>
