@@ -2,3 +2,11 @@
 #scanner{margin-top:18px;padding:12px;border:1px solid #3b5275;border-radius:12px;max-width:440px}#scan-video{width:100%;max-height:340px;object-fit:cover;border-radius:8px;background:#030711}.qr-panel{display:flex;align-items:center;justify-content:space-between;gap:22px;flex-wrap:wrap;border-top:1px solid #30415f;padding-top:22px;margin-top:23px}.qr-panel>div:first-child{max-width:360px}.qr-panel h3{margin:0;font-size:20px}.qr-panel p{font-size:13px}.qr-panel button{margin-right:9px;margin-bottom:9px}#qr-output{background:white;padding:13px;border-radius:12px;text-align:center;color:#1c2b44}#qr-output canvas{display:block;max-width:100%;height:auto}#qr-output .fine{color:#1c2b44;max-width:240px}
 
 .member-list{display:flex;flex-direction:column;gap:10px;margin-top:18px}.member-row{border:1px solid #314967;border-radius:11px;background:#0c192d;padding:15px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}.member-row p{font-size:12px;margin:5px 0}.member-row strong{font-size:15px}
+
+.gallery-admin-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin-top:18px}
+.gallery-admin-item{border:1px solid #3b5578;border-radius:12px;background:#0b1729;overflow:hidden}
+.gallery-admin-item img{display:block;width:100%;height:220px;object-fit:cover}
+.gallery-admin-item>div{padding:14px}.gallery-admin-item p{color:#c7d8ed;font-size:13px;margin:0 0 16px}
+.gallery-admin-item .actions{display:flex;flex-wrap:wrap;gap:8px}
+.gallery-admin-item button{font-size:12px;padding:10px 12px}
+#gallery-admin-status{margin-top:20px}
