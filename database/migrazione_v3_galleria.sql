@@ -48,7 +48,7 @@ with check (
  bucket_id='gc-gallery'
  and (auth.jwt() ->> 'email') is not null
  and (storage.foldername(name))[1] = (select auth.uid())::text
- and name ~ ('^' || (select auth.uid())::text || '/[0-9a-f-]{36}\\.(jpg|jpeg|png|webp)$')
+ and name ~ ('^' || (select auth.uid())::text || '/[0-9a-f-]{36}\.(jpg|jpeg|png|webp)$')
 );
 
 drop policy if exists "gc gallery view approved or owner" on storage.objects;
@@ -84,7 +84,7 @@ begin
  then raise exception 'Accedi con un indirizzo email verificato'; end if;
  if p_authorized is distinct from true then
    raise exception 'È necessaria la dichiarazione di autorizzazione alla pubblicazione'; end if;
- if coalesce(p_storage_path,'') !~ ('^'||v_uid::text||'/[0-9a-f-]{36}\\.(jpg|jpeg|png|webp)$') then
+ if coalesce(p_storage_path,'') !~ ('^'||v_uid::text||'/[0-9a-f-]{36}\.(jpg|jpeg|png|webp)$') then
   raise exception 'Percorso non valido'; end if;
  if char_length(coalesce(p_caption,''))>160 then
   raise exception 'Didascalia troppo lunga'; end if;
@@ -135,6 +135,8 @@ $$;
 revoke all on function public.gc_gallery_submit(text,text,boolean) from public;
 revoke all on function public.gc_gallery_review(uuid,text) from public;
 revoke all on function public.gc_gallery_pending() from public;
+-- Questa funzione rivela solo un booleano: ad anon restituisce false.
+grant execute on function public.gc_is_operator() to anon;
 grant execute on function public.gc_gallery_submit(text,text,boolean),
  public.gc_gallery_review(uuid,text),public.gc_gallery_pending() to authenticated;
 
