@@ -8,7 +8,7 @@ function notice(message,type=''){const n=$('notice');n.className='notice '+type;
 function show(id){if(id!=='dashboard')stopScanner();for(const k of ['setup','login','dashboard'])$(k).hidden=k!==id;if(id!=='dashboard')$('member').hidden=true;}
 function config(){try{return JSON.parse(localStorage.getItem(store))}catch{return null}}
 function useConfig(c){const u=new URL(c.url);if(u.protocol!=='https:'||!u.hostname.endsWith('.supabase.co')||u.username||u.password||u.search||u.hash)throw Error('Usa l’URL HTTPS del progetto Supabase.');if(!c.key||!(/^(sb_publishable_|eyJ)/.test(c.key)))throw Error('Usa soltanto la chiave publishable o anon public. Non inserire chiavi segrete.');client=createClient(u.origin,c.key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});return {url:u.origin,key:c.key};}
-async function verify(){const {data:{user},error}=await client.auth.getUser();if(error||!user){show('login');return;}const {data, error:opError}=await client.rpc('gc_is_operator');if(opError||data!==true){await client.auth.signOut();selected=null;show('login');notice('Account non autorizzato come operatore.','error');return;}show('dashboard');notice('Accesso operatore autorizzato.','success');loadMembers();}
+async function verify(){const {data:{user},error}=await client.auth.getUser();if(error||!user){show('login');return;}const {data, error:opError}=await client.rpc('gc_is_operator');if(opError||data!==true){await client.auth.signOut();selected=null;show('login');notice('Account non autorizzato come operatore.','error');return;}show('dashboard');notice('Accesso operatore autorizzato.','success');loadMembers();loadGalleryModeration();}
 async function init(){const c=config();if(!c){show('setup');return}try{useConfig(c);$('url').value=c.url;$('key').value=c.key;await verify();}catch(e){show('setup');notice(e.message,'error');}}
 $('config-form').addEventListener('submit',async e=>{e.preventDefault();try{const c=useConfig({url:$('url').value.trim(),key:$('key').value.trim()});localStorage.setItem(store,JSON.stringify(c));notice('Configurazione pubblica salvata in questo browser. Ora accedi.');await verify();}catch(err){notice(err.message,'error');}});
 $('change').addEventListener('click',async()=>{if(client)await client.auth.signOut();client=null;selected=null;show('setup');});
@@ -142,3 +142,36 @@ $('create-member').addEventListener('submit',async e=>{
  finally{btn.disabled=false;}
 });
 $('reload-members').addEventListener('click',loadMembers);
+
+async function loadGalleryModeration(){
+ const target=$('gallery-admin-list');if(!target||!client)return;
+ target.replaceChildren();$('gallery-admin-status').textContent='Caricamento richieste...';
+ const {data,error}=await client.rpc('gc_gallery_pending');
+ if(error){$('gallery-admin-status').textContent='Gestione galleria non ancora collegata: esegui la migrazione v3 nel SQL Editor. '+error.message;return;}
+ if(!data?.length){$('gallery-admin-status').textContent='Nessuna foto in attesa di approvazione.';return;}
+ $('gallery-admin-status').textContent=data.length+' fotografie in attesa.';
+ for(const photo of data){
+  const wrap=document.createElement('div');wrap.className='gallery-admin-item';
+  const {data:signature,error:signError}=await client.storage.from('gc-gallery').createSignedUrl(photo.storage_path,600);
+  if(signError||!signature?.signedUrl)continue;
+  const img=document.createElement('img');img.src=signature.signedUrl;img.alt='Foto inviata da un cliente in attesa di revisione';
+  const details=document.createElement('div');const caption=document.createElement('p');caption.textContent=photo.caption||'Senza didascalia';details.append(caption);
+  const actions=document.createElement('div');actions.className='actions';
+  for(const status of ['approved','rejected']){
+   const b=document.createElement('button');b.type='button';b.className=status==='rejected'?'secondary':'';b.textContent=status==='approved'?'Approva foto':'Rifiuta foto';
+   b.addEventListener('click',async()=>{
+    if(!window.confirm(status==='approved'?'Confermi che questa foto può essere pubblicata?':'Rifiutare questa fotografia?'))return;
+    for(const button of actions.querySelectorAll('button'))button.disabled=true;
+    const {error:reviewError}=await client.rpc('gc_gallery_review',{p_photo:photo.photo_id,p_status:status});
+    if(reviewError){$('gallery-admin-status').textContent=reviewError.message;for(const button of actions.querySelectorAll('button'))button.disabled=false;return;}
+    if(status==='rejected'){
+      const {error:deleteError}=await client.storage.from('gc-gallery').remove([photo.storage_path]);
+      if(deleteError)$('gallery-admin-status').textContent='Rifiutata, ma impossibile cancellare il file: '+deleteError.message;
+    }
+    await loadGalleryModeration();
+   });actions.append(b);
+  }
+  details.append(actions);wrap.append(img,details);target.append(wrap);
+ }
+}
+$('gallery-admin-refresh').addEventListener('click',loadGalleryModeration);
