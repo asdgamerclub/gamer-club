@@ -14,7 +14,40 @@ $('config-form').addEventListener('submit',async e=>{e.preventDefault();try{cons
 $('change').addEventListener('click',async()=>{if(client)await client.auth.signOut();client=null;selected=null;show('setup');});
 $('login-form').addEventListener('submit',async e=>{e.preventDefault();const b=e.submitter;if(b)b.disabled=true;try{const {error}=await client.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});$('password').value='';if(error)throw error;await verify();}catch(err){notice('Accesso non riuscito: '+err.message,'error');}finally{if(b)b.disabled=false;}});
 $('logout').addEventListener('click',async()=>{await client.auth.signOut();selected=null;lastToken=null;show('login');notice('Sessione terminata.');});
-async function lookup(token){const {data,error}=await client.rpc('gc_member_by_qr',{p_token:token});if(error)throw error;const member=Array.isArray(data)?data[0]:null;if(!member)throw Error('Nessun socio trovato con questo token.');selected=member;lastToken=token;$('member-name').textContent=member.first_name+' '+member.last_name;$('member-number').textContent='Socio n. '+member.member_number;$('member-status').textContent=member.status;$('progress').textContent=member.progress+' / 10';$('available').textContent=member.rewards_available;$('redeemed').textContent=member.rewards_redeemed;$('member').hidden=false;$('qr-output').hidden=true;$('qr-output').replaceChildren();$('qr-show').hidden=false;$('qr-hide').hidden=true;$('add').disabled=member.status!=='active';$('redeem').disabled=member.status!=='active'||member.rewards_available<1;}
+let cardTier='blue';
+async function refreshTier(memberId){
+  const el=$('card-tier'),desc=$('tier-description'),gold=$('gold-toggle');
+  if(!client||!memberId)return;
+  const {data,error}=await client.rpc('gc_card_tier',{p_member:memberId});
+  if(error){
+    el.textContent='BLU';el.dataset.tier='blue';
+    desc.textContent='Per attivare i livelli Argento e Oro, applica la migrazione v4 nel SQL Editor.';
+    gold.hidden=true;return;
+  }
+  cardTier=['blue','silver','gold'].includes(data)?data:'blue';
+  const labels={blue:'BLU',silver:'ARGENTO',gold:'ORO'};
+  el.textContent=labels[cardTier];el.dataset.tier=cardTier;
+  desc.textContent=cardTier==='gold'?'Tessera riservata a un collaboratore autorizzato.':
+    cardTier==='silver'?'Oltre 10 premi riscattati: livello Argento attivo.':
+    'Livello Blu: il passaggio ad Argento avviene dopo l’11° premio riscattato.';
+  gold.hidden=false;
+  gold.textContent=cardTier==='gold'?'Rimuovi livello Oro':'Assegna livello Oro';
+  gold.disabled=selected?.status!=='active';
+}
+$('gold-toggle').addEventListener('click',async()=>{
+  if(!selected||!client||selected.status!=='active')return;
+  const enable=cardTier!=='gold';
+  if(!window.confirm(enable?'Assegnare manualmente una delle cinque tessere Oro a questo collaboratore?':'Revocare il livello Oro a questa tessera?'))return;
+  const button=$('gold-toggle');button.disabled=true;
+  try{
+    const {data,error}=await client.rpc('gc_operator_set_gold',{p_member:selected.member_id,p_enable:enable});
+    if(error)throw error;
+    await refreshTier(selected.member_id);
+    notice('Livello tessera aggiornato. Tessere Oro assegnate: '+data+' su 5.','success');
+  }catch(error){notice('Modifica livello non riuscita: '+error.message,'error');}
+  finally{button.disabled=false;}
+});
+async function lookup(token){const {data,error}=await client.rpc('gc_member_by_qr',{p_token:token});if(error)throw error;const member=Array.isArray(data)?data[0]:null;if(!member)throw Error('Nessun socio trovato con questo token.');selected=member;lastToken=token;$('member-name').textContent=member.first_name+' '+member.last_name;$('member-number').textContent='Socio n. '+member.member_number;$('member-status').textContent=member.status;$('progress').textContent=member.progress+' / 10';$('available').textContent=member.rewards_available;$('redeemed').textContent=member.rewards_redeemed;$('member').hidden=false;$('qr-output').hidden=true;$('qr-output').replaceChildren();$('qr-show').hidden=false;$('qr-hide').hidden=true;$('add').disabled=member.status!=='active';$('redeem').disabled=member.status!=='active'||member.rewards_available<1;await refreshTier(member.member_id);}
 $('search-form').addEventListener('submit',async e=>{e.preventDefault();const token=$('token').value.trim();selected=null;$('member').hidden=true;if(!uuid.test(token)){notice('Token QR non valido: occorre un UUID.','error');return;}try{await lookup(token);notice('Socio identificato. Verifica identità e stato prima di procedere.','success');}catch(err){notice(err.message,'error');}});
 async function record(kind){if(!selected||!lastToken)return;const name=selected.first_name+' '+selected.last_name;const action=kind==='paid_game'?'Aggiungere 1 partita pagata':'Riscattare 1 premio per due giocatori';if(!window.confirm(action+' per '+name+'?'))return;for(const id of ['add','redeem'])$(id).disabled=true;try{const {error}=await client.rpc('gc_record_event',{p_member:selected.member_id,p_kind:kind});if(error)throw error;await lookup(lastToken);notice(kind==='paid_game'?'Partita registrata nel database.':'Premio riscattato e registrato nel database.','success');}catch(err){notice('Operazione non eseguita: '+err.message,'error');await lookup(lastToken).catch(()=>{$('member').hidden=true;});}}
 $('add').addEventListener('click',()=>record('paid_game'));$('redeem').addEventListener('click',()=>record('reward_redeemed'));
