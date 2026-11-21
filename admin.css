@@ -12,3 +12,5 @@
 #gallery-admin-status{margin-top:20px}
 
 .tier-panel{border:1px solid #405b80;background:linear-gradient(135deg,#101f37,#0b1424);padding:18px 20px;border-radius:13px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:15px;margin:22px 0}.tier-panel .eyebrow{margin:0}.tier-panel h3{font-size:27px;letter-spacing:.05em;margin:6px 0}.tier-panel h3[data-tier="blue"]{color:#5ba8ff}.tier-panel h3[data-tier="silver"]{color:#d8e1eb}.tier-panel h3[data-tier="gold"]{color:#ffd16b}.tier-panel p.fine{margin:0;max-width:390px}.tier-panel button{font-size:12px}
+
+.wallet-panel{margin:24px 0;padding:20px;border:1px solid #386eaf;border-radius:12px;background:linear-gradient(110deg,#122c50,#111b2c)}.wallet-panel h3{margin:4px 0 8px;font-size:21px}.wallet-panel p{margin:6px 0 14px}.wallet-panel #wallet-save{display:inline-flex;align-items:center;padding:12px 17px;border-radius:9px;background:#f1f6ff;color:#0a2450;font-weight:800;margin:12px 0;text-decoration:none}.wallet-panel #wallet-save[hidden]{display:none}
