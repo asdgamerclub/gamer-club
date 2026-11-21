@@ -10,3 +10,5 @@
 .gallery-admin-item .actions{display:flex;flex-wrap:wrap;gap:8px}
 .gallery-admin-item button{font-size:12px;padding:10px 12px}
 #gallery-admin-status{margin-top:20px}
+
+.tier-panel{border:1px solid #405b80;background:linear-gradient(135deg,#101f37,#0b1424);padding:18px 20px;border-radius:13px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:15px;margin:22px 0}.tier-panel .eyebrow{margin:0}.tier-panel h3{font-size:27px;letter-spacing:.05em;margin:6px 0}.tier-panel h3[data-tier="blue"]{color:#5ba8ff}.tier-panel h3[data-tier="silver"]{color:#d8e1eb}.tier-panel h3[data-tier="gold"]{color:#ffd16b}.tier-panel p.fine{margin:0;max-width:390px}.tier-panel button{font-size:12px}
