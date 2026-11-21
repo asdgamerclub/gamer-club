@@ -13,7 +13,7 @@ async function init(){const c=config();if(!c){show('setup');return}try{useConfig
 $('config-form').addEventListener('submit',async e=>{e.preventDefault();try{const c=useConfig({url:$('url').value.trim(),key:$('key').value.trim()});localStorage.setItem(store,JSON.stringify(c));notice('Configurazione pubblica salvata in questo browser. Ora accedi.');await verify();}catch(err){notice(err.message,'error');}});
 $('change').addEventListener('click',async()=>{if(client)await client.auth.signOut();client=null;selected=null;show('setup');});
 $('login-form').addEventListener('submit',async e=>{e.preventDefault();const b=e.submitter;if(b)b.disabled=true;try{const {error}=await client.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});$('password').value='';if(error)throw error;await verify();}catch(err){notice('Accesso non riuscito: '+err.message,'error');}finally{if(b)b.disabled=false;}});
-$('logout').addEventListener('click',async()=>{await client.auth.signOut();selected=null;lastToken=null;show('login');notice('Sessione terminata.');});
+$('logout').addEventListener('click',async()=>{await client.auth.signOut();selected=null;lastToken=null;resetWalletLink();show('login');notice('Sessione terminata.');});
 let cardTier='blue';
 async function refreshTier(memberId){
   const el=$('card-tier'),desc=$('tier-description'),gold=$('gold-toggle');
@@ -47,8 +47,42 @@ $('gold-toggle').addEventListener('click',async()=>{
   }catch(error){notice('Modifica livello non riuscita: '+error.message,'error');}
   finally{button.disabled=false;}
 });
-async function lookup(token){const {data,error}=await client.rpc('gc_member_by_qr',{p_token:token});if(error)throw error;const member=Array.isArray(data)?data[0]:null;if(!member)throw Error('Nessun socio trovato con questo token.');selected=member;lastToken=token;$('member-name').textContent=member.first_name+' '+member.last_name;$('member-number').textContent='Socio n. '+member.member_number;$('member-status').textContent=member.status;$('progress').textContent=member.progress+' / 10';$('available').textContent=member.rewards_available;$('redeemed').textContent=member.rewards_redeemed;$('member').hidden=false;$('qr-output').hidden=true;$('qr-output').replaceChildren();$('qr-show').hidden=false;$('qr-hide').hidden=true;$('add').disabled=member.status!=='active';$('redeem').disabled=member.status!=='active'||member.rewards_available<1;await refreshTier(member.member_id);}
-$('search-form').addEventListener('submit',async e=>{e.preventDefault();const token=$('token').value.trim();selected=null;$('member').hidden=true;if(!uuid.test(token)){notice('Token QR non valido: occorre un UUID.','error');return;}try{await lookup(token);notice('Socio identificato. Verifica identità e stato prima di procedere.','success');}catch(err){notice(err.message,'error');}});
+function resetWalletLink(){
+  const link=$('wallet-save'),feedback=$('wallet-feedback');
+  link.hidden=true;link.removeAttribute('href');feedback.textContent='';
+}
+$('wallet-generate').addEventListener('click',async()=>{
+  if(!client||!selected||!lastToken||selected.status!=='active')return;
+  resetWalletLink();
+  const button=$('wallet-generate');button.disabled=true;
+  const feedback=$('wallet-feedback');
+  feedback.textContent='Preparazione tessera in corso…';
+  try{
+    const {data,error}=await client.functions.invoke('gamer-wallet-test',{
+      method:'POST',body:{qr_token:lastToken}
+    });
+    if(error){
+      let message=error.message;
+      if(error.context){
+        try{const payload=await error.context.json();message=payload.error||message;}catch{}
+      }
+      throw new Error(message);
+    }
+    if(!data?.saveUrl||!/^https:\/\/pay\.google\.com\/gp\/v\/save\/[A-Za-z0-9._-]+$/.test(data.saveUrl))
+      throw new Error('La funzione non ha restituito un collegamento Wallet valido.');
+    const link=$('wallet-save');
+    link.href=data.saveUrl;link.hidden=false;
+    feedback.textContent='Tessera '+(data.tier||'')+' del socio n. '+(data.memberNumber||'')+
+      ' preparata. Apri il collegamento soltanto su un account Google autorizzato per i test.';
+    notice('Collegamento Google Wallet di test generato.','success');
+  }catch(error){
+    feedback.textContent='Impossibile preparare la tessera: '+error.message+
+      ' Se compare 401, controlla in Supabase che la funzione accetti il JWT utente.';
+    notice('Creazione tessera Google Wallet non riuscita.','error');
+  }finally{button.disabled=selected?.status!=='active';}
+});
+async function lookup(token){const {data,error}=await client.rpc('gc_member_by_qr',{p_token:token});if(error)throw error;const member=Array.isArray(data)?data[0]:null;if(!member)throw Error('Nessun socio trovato con questo token.');selected=member;lastToken=token;resetWalletLink();$('wallet-generate').disabled=member.status!=='active';$('member-name').textContent=member.first_name+' '+member.last_name;$('member-number').textContent='Socio n. '+member.member_number;$('member-status').textContent=member.status;$('progress').textContent=member.progress+' / 10';$('available').textContent=member.rewards_available;$('redeemed').textContent=member.rewards_redeemed;$('member').hidden=false;$('qr-output').hidden=true;$('qr-output').replaceChildren();$('qr-show').hidden=false;$('qr-hide').hidden=true;$('add').disabled=member.status!=='active';$('redeem').disabled=member.status!=='active'||member.rewards_available<1;await refreshTier(member.member_id);}
+$('search-form').addEventListener('submit',async e=>{e.preventDefault();const token=$('token').value.trim();selected=null;resetWalletLink();$('member').hidden=true;if(!uuid.test(token)){notice('Token QR non valido: occorre un UUID.','error');return;}try{await lookup(token);notice('Socio identificato. Verifica identità e stato prima di procedere.','success');}catch(err){notice(err.message,'error');}});
 async function record(kind){if(!selected||!lastToken)return;const name=selected.first_name+' '+selected.last_name;const action=kind==='paid_game'?'Aggiungere 1 partita pagata':'Riscattare 1 premio per due giocatori';if(!window.confirm(action+' per '+name+'?'))return;for(const id of ['add','redeem'])$(id).disabled=true;try{const {error}=await client.rpc('gc_record_event',{p_member:selected.member_id,p_kind:kind});if(error)throw error;await lookup(lastToken);notice(kind==='paid_game'?'Partita registrata nel database.':'Premio riscattato e registrato nel database.','success');}catch(err){notice('Operazione non eseguita: '+err.message,'error');await lookup(lastToken).catch(()=>{$('member').hidden=true;});}}
 $('add').addEventListener('click',()=>record('paid_game'));$('redeem').addEventListener('click',()=>record('reward_redeemed'));
 init();
