@@ -1,5 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.10';
-const db=createClient('https://vbymfpjistibabzijahi.supabase.co','sb_publishable_vEyF0m37DUvl0JHre2TDoQ_7v5zPPf9',{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+const db=createClient('https://vbymfpijstibabzijahi.supabase.co','sb_publishable_vEyF0m37DUvl0JHre2TDoQ_7v5zPPf9',{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
 const $=id=>document.getElementById(id);
 $('year').textContent=new Date().getFullYear();
 const today=new Date(),maxDate=[today.getFullYear(),String(today.getMonth()+1).padStart(2,'0'),String(today.getDate()).padStart(2,'0')].join('-');
