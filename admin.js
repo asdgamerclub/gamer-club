@@ -104,7 +104,7 @@ async function loadPointRequests(){
     const {error}=await client.rpc('gc_operator_review_point',{p_request:r.request_id,p_approve:approve});
     if(error){message.textContent='Operazione fallita: '+error.message;for(const x of actions.querySelectorAll('button'))x.disabled=false;return;}
     await loadPointRequests();notice(approve?'Punto verificato e accreditato.':'Richiesta rifiutata.','success');
-    if(selected&&selected.member_id===r.member_id&&lastToken){await lookup(lastToken);if(approve)await syncWalletAfterChange(lastToken);}
+    if(selected&&selected.member_id===r.member_id&&lastToken)await lookup(lastToken);if(approve&&r.qr_token)await syncWalletAfterChange(r.qr_token);
    });actions.append(b);
   }
   row.append(actions);container.append(row);
