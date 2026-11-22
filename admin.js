@@ -104,7 +104,7 @@ async function loadPointRequests(){
     const {error}=await client.rpc('gc_operator_review_point',{p_request:r.request_id,p_approve:approve});
     if(error){message.textContent='Operazione fallita: '+error.message;for(const x of actions.querySelectorAll('button'))x.disabled=false;return;}
     await loadPointRequests();notice(approve?'Punto verificato e accreditato.':'Richiesta rifiutata.','success');
-    if(selected&&selected.member_id===r.member_id&&lastToken)await lookup(lastToken);
+    if(selected&&selected.member_id===r.member_id&&lastToken){await lookup(lastToken);if(approve)await syncWalletAfterChange(lastToken);}
    });actions.append(b);
   }
   row.append(actions);container.append(row);
@@ -122,9 +122,19 @@ $('member-email-save').addEventListener('click',async()=>{
  }catch(error){notice('Email non aggiornata: '+error.message,'error');}
  finally{b.disabled=false;}
 });
+async function syncWalletAfterChange(token){
+ if(!client||!token)return false;
+ try{
+  const {data,error}=await client.functions.invoke('gamer-wallet-test',{
+   method:'POST',body:{qr_token:token,mode:'sync'}
+  });
+  if(error||!data?.synced)return false;
+  return true;
+ }catch{return false;}
+}
 async function lookup(token){const {data,error}=await client.rpc('gc_member_by_qr',{p_token:token});if(error)throw error;const member=Array.isArray(data)?data[0]:null;if(!member)throw Error('Nessun socio trovato con questo token.');selected=member;lastToken=token;$('member-email-input').value='';resetWalletLink();$('wallet-generate').disabled=member.status!=='active';$('member-name').textContent=member.first_name+' '+member.last_name;$('member-number').textContent='Socio n. '+member.member_number;$('member-status').textContent=member.status;$('progress').textContent=member.progress+' / 10';$('available').textContent=member.rewards_available;$('redeemed').textContent=member.rewards_redeemed;$('member').hidden=false;$('qr-output').hidden=true;$('qr-output').replaceChildren();$('qr-show').hidden=false;$('qr-hide').hidden=true;$('add').disabled=member.status!=='active';$('redeem').disabled=member.status!=='active'||member.rewards_available<1;await refreshTier(member.member_id);}
 $('search-form').addEventListener('submit',async e=>{e.preventDefault();const token=$('token').value.trim();selected=null;resetWalletLink();$('member').hidden=true;if(!uuid.test(token)){notice('Token QR non valido: occorre un UUID.','error');return;}try{await lookup(token);notice('Socio identificato. Verifica identità e stato prima di procedere.','success');}catch(err){notice(err.message,'error');}});
-async function record(kind){if(!selected||!lastToken)return;const name=selected.first_name+' '+selected.last_name;const action=kind==='paid_game'?'Aggiungere 1 partita pagata':'Riscattare 1 premio per due giocatori';if(!window.confirm(action+' per '+name+'?'))return;for(const id of ['add','redeem'])$(id).disabled=true;try{const {error}=await client.rpc('gc_record_event',{p_member:selected.member_id,p_kind:kind});if(error)throw error;await lookup(lastToken);notice(kind==='paid_game'?'Partita registrata nel database.':'Premio riscattato e registrato nel database.','success');}catch(err){notice('Operazione non eseguita: '+err.message,'error');await lookup(lastToken).catch(()=>{$('member').hidden=true;});}}
+async function record(kind){if(!selected||!lastToken)return;const name=selected.first_name+' '+selected.last_name;const action=kind==='paid_game'?'Aggiungere 1 partita pagata':'Riscattare 1 premio per due giocatori';if(!window.confirm(action+' per '+name+'?'))return;for(const id of ['add','redeem'])$(id).disabled=true;try{const {error}=await client.rpc('gc_record_event',{p_member:selected.member_id,p_kind:kind});if(error)throw error;await lookup(lastToken);const walletSynced=await syncWalletAfterChange(lastToken);notice((kind==='paid_game'?'Partita registrata nel database.':'Premio riscattato e registrato nel database.')+(walletSynced?' Google Wallet sincronizzato.':' La tessera web è aggiornata; Google Wallet potrebbe richiedere una sincronizzazione successiva.'),'success');}catch(err){notice('Operazione non eseguita: '+err.message,'error');await lookup(lastToken).catch(()=>{$('member').hidden=true;});}}
 $('add').addEventListener('click',()=>record('paid_game'));$('redeem').addEventListener('click',()=>record('reward_redeemed'));
 init();
 
