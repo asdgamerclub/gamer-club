@@ -23,12 +23,12 @@ revoke all on public.gc_point_requests from anon,authenticated;
 create or replace function public.gc_claim_my_card()
 returns text language plpgsql security definer set search_path=''
 as $$
-declare v_uid uuid := auth.uid(); v_email text; v_id uuid; v_count integer;
+declare v_uid uuid := auth.uid(); v_email text; v_confirmed timestamptz; v_count integer;
 begin
  if v_uid is null then raise exception 'Accedi con email prima di continuare'; end if;
- select lower(trim(u.email)), u.email_confirmed_at into v_email, v_id
+ select lower(trim(u.email)), u.email_confirmed_at into v_email, v_confirmed
  from auth.users u where u.id=v_uid;
- if v_id is null then raise exception 'Email non ancora verificata'; end if;
+ if v_confirmed is null then raise exception 'Email non ancora verificata'; end if;
  if v_email is null or v_email='' then raise exception 'Email non disponibile'; end if;
  if exists(select 1 from public.gc_members where auth_user_id=v_uid) then return 'already_linked'; end if;
  -- Per evitare associazioni ambigue non autorizzare email duplicate.
