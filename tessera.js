@@ -1,5 +1,5 @@
 import {createClient} from 'https://esm.sh/@supabase/supabase-js@2.49.10';
-const URL='https://vbymfpjistibabzijahi.supabase.co';
+const URL='https://vbymfpijstibabzijahi.supabase.co';
 const KEY='sb_publishable_vEyF0m37DUvl0JHre2TDoQ_7v5zPPf9';
 const db=createClient(URL,KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
 const $=id=>document.getElementById(id);
