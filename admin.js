@@ -8,7 +8,7 @@ function notice(message,type=''){const n=$('notice');n.className='notice '+type;
 function show(id){if(id!=='dashboard')stopScanner();for(const k of ['setup','login','dashboard'])$(k).hidden=k!==id;if(id!=='dashboard')$('member').hidden=true;}
 function config(){try{return JSON.parse(localStorage.getItem(store))}catch{return null}}
 function useConfig(c){const u=new URL(c.url);if(u.protocol!=='https:'||!u.hostname.endsWith('.supabase.co')||u.username||u.password||u.search||u.hash)throw Error('Usa l’URL HTTPS del progetto Supabase.');if(!c.key||!(/^(sb_publishable_|eyJ)/.test(c.key)))throw Error('Usa soltanto la chiave publishable o anon public. Non inserire chiavi segrete.');client=createClient(u.origin,c.key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});return {url:u.origin,key:c.key};}
-async function verify(){const {data:{user},error}=await client.auth.getUser();if(error||!user){show('login');return;}const {data, error:opError}=await client.rpc('gc_is_operator');if(opError||data!==true){await client.auth.signOut();selected=null;show('login');notice('Account non autorizzato come operatore.','error');return;}show('dashboard');notice('Accesso operatore autorizzato.','success');loadMembers();loadGalleryModeration();}
+async function verify(){const {data:{user},error}=await client.auth.getUser();if(error||!user){show('login');return;}const {data, error:opError}=await client.rpc('gc_is_operator');if(opError||data!==true){await client.auth.signOut();selected=null;show('login');notice('Account non autorizzato come operatore.','error');return;}show('dashboard');notice('Accesso operatore autorizzato.','success');loadMembers();loadGalleryModeration();loadPointRequests();}
 async function init(){const c=config();if(!c){show('setup');return}try{useConfig(c);$('url').value=c.url;$('key').value=c.key;await verify();}catch(e){show('setup');notice(e.message,'error');}}
 $('config-form').addEventListener('submit',async e=>{e.preventDefault();try{const c=useConfig({url:$('url').value.trim(),key:$('key').value.trim()});localStorage.setItem(store,JSON.stringify(c));notice('Configurazione pubblica salvata in questo browser. Ora accedi.');await verify();}catch(err){notice(err.message,'error');}});
 $('change').addEventListener('click',async()=>{if(client)await client.auth.signOut();client=null;selected=null;show('setup');});
@@ -81,7 +81,48 @@ $('wallet-generate').addEventListener('click',async()=>{
     notice('Creazione tessera Google Wallet non riuscita.','error');
   }finally{button.disabled=selected?.status!=='active';}
 });
-async function lookup(token){const {data,error}=await client.rpc('gc_member_by_qr',{p_token:token});if(error)throw error;const member=Array.isArray(data)?data[0]:null;if(!member)throw Error('Nessun socio trovato con questo token.');selected=member;lastToken=token;resetWalletLink();$('wallet-generate').disabled=member.status!=='active';$('member-name').textContent=member.first_name+' '+member.last_name;$('member-number').textContent='Socio n. '+member.member_number;$('member-status').textContent=member.status;$('progress').textContent=member.progress+' / 10';$('available').textContent=member.rewards_available;$('redeemed').textContent=member.rewards_redeemed;$('member').hidden=false;$('qr-output').hidden=true;$('qr-output').replaceChildren();$('qr-show').hidden=false;$('qr-hide').hidden=true;$('add').disabled=member.status!=='active';$('redeem').disabled=member.status!=='active'||member.rewards_available<1;await refreshTier(member.member_id);}
+async function loadPointRequests(){
+ if(!client)return;
+ const container=$('point-request-list');container.replaceChildren();
+ const message=$('point-request-feedback');
+ const {data,error}=await client.rpc('gc_operator_pending_points',{p_limit:40});
+ if(error){message.textContent='Gestione richieste non ancora attiva: esegui la migrazione v5. '+error.message;return;}
+ if(!data?.length){message.textContent='Nessuna richiesta di punti in attesa.';return;}
+ message.textContent=data.length+' richieste da verificare alla cassa.';
+ for(const r of data){
+  const row=document.createElement('div');row.className='member-row';
+  const info=document.createElement('div');const name=document.createElement('strong');
+  name.textContent=r.first_name+' '+r.last_name+' · Socio #'+r.member_number;
+  const time=document.createElement('p');time.textContent='Richiesta del '+new Date(r.created_at).toLocaleString('it-IT');
+  info.append(name,time);row.append(info);
+  const actions=document.createElement('div');actions.className='actions';
+  for(const approve of [true,false]){
+   const b=document.createElement('button');b.type='button';b.className=approve?'':'secondary';b.textContent=approve?'Approva +1':'Rifiuta';
+   b.addEventListener('click',async()=>{
+    if(!confirm(approve?'Hai verificato il pagamento di questa partita? Accredita 1 punto?':'Rifiutare la richiesta?'))return;
+    for(const x of actions.querySelectorAll('button'))x.disabled=true;
+    const {error}=await client.rpc('gc_operator_review_point',{p_request:r.request_id,p_approve:approve});
+    if(error){message.textContent='Operazione fallita: '+error.message;for(const x of actions.querySelectorAll('button'))x.disabled=false;return;}
+    await loadPointRequests();notice(approve?'Punto verificato e accreditato.':'Richiesta rifiutata.','success');
+    if(selected&&selected.member_id===r.member_id&&lastToken)await lookup(lastToken);
+   });actions.append(b);
+  }
+  row.append(actions);container.append(row);
+ }
+}
+$('refresh-point-requests').addEventListener('click',loadPointRequests);
+$('member-email-save').addEventListener('click',async()=>{
+ if(!client||!selected)return;
+ const email=$('member-email-input').value.trim();if(!email)return;
+ if(!confirm('Hai verificato che questa email appartenga al socio?'))return;
+ const b=$('member-email-save');b.disabled=true;
+ try{const {error}=await client.rpc('gc_operator_set_member_email',{p_member:selected.member_id,p_email:email});
+  if(error)throw error;
+  notice('Email socio registrata. Ora il socio può accedere da tessera.html e collegare la tessera.','success');
+ }catch(error){notice('Email non aggiornata: '+error.message,'error');}
+ finally{b.disabled=false;}
+});
+async function lookup(token){const {data,error}=await client.rpc('gc_member_by_qr',{p_token:token});if(error)throw error;const member=Array.isArray(data)?data[0]:null;if(!member)throw Error('Nessun socio trovato con questo token.');selected=member;lastToken=token;$('member-email-input').value='';resetWalletLink();$('wallet-generate').disabled=member.status!=='active';$('member-name').textContent=member.first_name+' '+member.last_name;$('member-number').textContent='Socio n. '+member.member_number;$('member-status').textContent=member.status;$('progress').textContent=member.progress+' / 10';$('available').textContent=member.rewards_available;$('redeemed').textContent=member.rewards_redeemed;$('member').hidden=false;$('qr-output').hidden=true;$('qr-output').replaceChildren();$('qr-show').hidden=false;$('qr-hide').hidden=true;$('add').disabled=member.status!=='active';$('redeem').disabled=member.status!=='active'||member.rewards_available<1;await refreshTier(member.member_id);}
 $('search-form').addEventListener('submit',async e=>{e.preventDefault();const token=$('token').value.trim();selected=null;resetWalletLink();$('member').hidden=true;if(!uuid.test(token)){notice('Token QR non valido: occorre un UUID.','error');return;}try{await lookup(token);notice('Socio identificato. Verifica identità e stato prima di procedere.','success');}catch(err){notice(err.message,'error');}});
 async function record(kind){if(!selected||!lastToken)return;const name=selected.first_name+' '+selected.last_name;const action=kind==='paid_game'?'Aggiungere 1 partita pagata':'Riscattare 1 premio per due giocatori';if(!window.confirm(action+' per '+name+'?'))return;for(const id of ['add','redeem'])$(id).disabled=true;try{const {error}=await client.rpc('gc_record_event',{p_member:selected.member_id,p_kind:kind});if(error)throw error;await lookup(lastToken);notice(kind==='paid_game'?'Partita registrata nel database.':'Premio riscattato e registrato nel database.','success');}catch(err){notice('Operazione non eseguita: '+err.message,'error');await lookup(lastToken).catch(()=>{$('member').hidden=true;});}}
 $('add').addEventListener('click',()=>record('paid_game'));$('redeem').addEventListener('click',()=>record('reward_redeemed'));
