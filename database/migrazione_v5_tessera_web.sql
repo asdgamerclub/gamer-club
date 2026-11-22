@@ -96,12 +96,12 @@ as $$
 $$;
 
 create or replace function public.gc_operator_pending_points(p_limit integer default 40)
-returns table(request_id uuid,member_id uuid,member_number bigint,first_name text,last_name text,created_at timestamptz)
+returns table(request_id uuid,member_id uuid,member_number bigint,first_name text,last_name text,created_at timestamptz,qr_token uuid)
 language plpgsql stable security definer set search_path=''
 as $$
 begin
  if not public.gc_is_operator() then raise exception 'Operatore non autorizzato'; end if;
- return query select r.id,m.id,m.number,m.first_name,m.last_name,r.created_at
+ return query select r.id,m.id,m.number,m.first_name,m.last_name,r.created_at,m.qr_token
  from public.gc_point_requests r join public.gc_members m on m.id=r.member_id
  where r.status='pending'
  order by r.created_at asc limit greatest(1,least(coalesce(p_limit,40),100));
