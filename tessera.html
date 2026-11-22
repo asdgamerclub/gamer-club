@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="it"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#07152c"><meta name="description" content="La tua tessera Gamer Club: QR socio, punti e premi.">
+<title>La mia Gamer Club Card</title>
+<link rel="stylesheet" href="tessera.css"><link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="LOGO%20PER%20INSTAGRAM.jpg">
+</head><body>
+<header class="topbar"><a href="index.html" class="brand"><img src="LOGO%20PER%20INSTAGRAM.jpg" alt=""><span>A.S.D. <b>GAMER CLUB</b></span></a><a class="nav-home" href="index.html">← Torna al sito</a></header>
+<main>
+<section class="intro"><p class="eyebrow">ENTRA NEL GIOCO</p><h1>LA TUA <em>GAMER CARD.</em></h1><p>La tessera associativa, il QR per la cassa, le partite registrate e i premi: tutto dal tuo telefono, anche senza Apple Wallet.</p></section>
+<div id="banner" class="notice" role="status" aria-live="polite">Accedi con l'email registrata presso Gamer Club.</div>
+<section id="login-panel" class="panel">
+ <p class="eyebrow">ACCESSO PERSONALE</p><h2>Entra nella tua tessera</h2>
+ <p>Riceverai un codice o un link via email. Nessuna password da ricordare. Usa la stessa email comunicata al personale in fase di iscrizione.</p>
+ <form id="login-form"><label for="email">Email del socio</label><input type="email" id="email" autocomplete="email" required placeholder="nome@esempio.it"><button type="submit" id="login-button">Invia link di accesso</button></form>
+ <p class="small">Non sei ancora socio? <a href="iscrizione.html">Scopri come richiedere la tessera</a>.</p>
+</section>
+<section id="link-panel" class="panel" hidden><p class="eyebrow">COLLEGAMENTO TESSERA</p><h2>Associa la tua card</h2><p>Se il personale ha registrato la tua email e approvato la tua tessera, puoi collegarla al tuo account con un clic.</p><button id="link-card">Collega tessera</button><p class="small">Se non viene trovata, chiedi alla cassa di verificare l'email associata alla tua tessera.</p><button type="button" class="secondary logout">Esci</button></section>
+<section id="card-panel" hidden>
+ <div class="account-line"><p>Account: <strong id="account-email"></strong></p><button type="button" class="secondary logout">Esci</button></div>
+ <div id="member-card" class="member-card tier-blue">
+  <div class="flare flare-a"></div><div class="flare flare-b"></div>
+  <div class="card-top"><div class="logo-lockup"><img src="LOGO%20PER%20INSTAGRAM.jpg" alt="Logo ASD Gamer Club"><div><strong>A.S.D. GAMER CLUB</strong><small>ENTRA NEL GIOCO</small></div></div><span class="card-type">TESSERA SOCIO</span></div>
+  <div class="card-middle"><div class="identity"><span class="mini-label">INTESTATARIO</span><h2 id="member-name">—</h2><span class="number-label">SOCIO N. <strong id="member-number">—</strong></span><span id="member-status" class="status">SOCIO ATTIVO</span></div><div class="qr-wrap"><div id="qr-box" aria-label="QR identificativo personale"></div><span>SCANSIONA ALLA CASSA</span></div></div>
+  <div class="card-bottom"><div class="points"><span>FIDELITY</span><strong id="points-count">0 / 10 PARTITE</strong><div id="point-dots" class="dots" aria-label="Partite registrate"></div></div><div class="reward"><span>PREMIO</span><strong>1 PARTITA × 2 GIOCATORI</strong><small id="reward-summary">Mancano 10 partite</small></div></div>
+  <div class="card-footer"><span id="tier-label">GAMER BLUE</span><span id="card-dates">TESSERA DIGITALE</span></div>
+ </div>
+ <div class="card-tools"><button id="refresh" class="secondary">Aggiorna dati</button><button id="flip" class="secondary">Vedi vantaggi</button></div>
+ <div id="back-card" class="back-card" hidden><img src="LOGO%20PER%20INSTAGRAM.jpg" alt=""><h2>A.S.D. GAMER CLUB</h2><p>La tessera associativa digitale che premia la tua passione.</p><ul><li>QR univoco valido alla cassa</li><li>Un premio ogni 10 partite pagate</li><li>Ogni premio vale una partita gratuita per due giocatori</li><li>Premi cumulabili</li><li>Promozioni riservate ai soci</li></ul><strong>Più giochi, più vantaggi!</strong></div>
+ <div class="stats"><div><span>Partite nel ciclo</span><strong id="stat-progress">0/10</strong></div><div><span>Premi disponibili</span><strong id="stat-available">0</strong></div><div><span>Premi riscattati</span><strong id="stat-redeemed">0</strong></div><div><span>Livello</span><strong id="stat-tier">Blu</strong></div></div>
+ <div class="panel request-panel"><p class="eyebrow">PARTITE E PUNTI</p><h2>Hai appena giocato?</h2><p>Puoi inviare una richiesta per registrare una partita. <strong>Il punto viene aggiunto soltanto dopo la conferma del personale</strong>, per impedire accrediti non autorizzati.</p><button id="request-point">Richiedi 1 punto</button><p id="request-feedback" role="status" aria-live="polite" class="small"></p><div class="requests"><h3>Ultime richieste</h3><div id="request-list">Nessuna richiesta.</div></div></div>
+ <div class="panel"><p class="eyebrow">SALVA SUL TELEFONO</p><h2>Sempre a portata di mano</h2><p>Questa tessera web funziona su iPhone e Android senza abbonamenti Apple Wallet. Da Safari su iPhone scegli <b>Condividi → Aggiungi alla schermata Home</b>. Su Android usa il menu del browser e <b>Aggiungi a schermata Home</b>.</p><p class="small">Google Wallet è un'integrazione separata; i dati mostrati qui sono quelli aggiornati su Supabase.</p></div>
+ </section>
+</main><footer>© <span id="year"></span> A.S.D. Gamer Club · Benevento · <a href="mailto:asdgamerclub@gmail.com">Contatti</a></footer>
+<script type="module" src="tessera.js"></script></body></html>
