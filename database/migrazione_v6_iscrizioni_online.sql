@@ -27,7 +27,7 @@ begin
  if length(coalesce(p_residence,''))>160 or length(coalesce(p_phone,''))>24
  then raise exception 'Campo troppo lungo'; end if;
  -- Impedisce le domande doppie, anche se richieste contemporaneamente.
- perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtext(v_email));
+ perform pg_catalog.pg_advisory_xact_lock(91122,pg_catalog.hashtext(v_email));
  if exists(select 1 from public.gc_members where auth_user_id=v_uid
    or lower(trim(email))=v_email)
  then raise exception 'Esiste gia una domanda o tessera associata a questa email'; end if;
