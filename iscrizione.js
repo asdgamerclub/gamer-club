@@ -80,7 +80,7 @@ $('join').addEventListener('submit',async e=>{
  try{
   if(!user){
    storeDraft();
-   const {error}=await db.auth.signInWithOtp({email,options:{emailRedirectTo:location.origin+location.pathname,shouldCreateUser:true}});
+   const {error}=await db.auth.signInWithOtp({email,options:{emailRedirectTo:location.origin+location.pathname+(wifiEntry?'?wifi=1':''),shouldCreateUser:true}});
    if(error)throw error;
    $('registration-state').textContent='Controlla la tua email. La richiesta NON è ancora stata inviata: apri il link e premi nuovamente il pulsante.';
    message('Ti abbiamo inviato un link email. Aprilo sullo stesso dispositivo per completare la richiesta.');
