@@ -16,7 +16,9 @@ as $$
     and exists (
       select 1
       from public.gc_members m
-      where m.auth_user_id = auth.uid()
+      join auth.users u on u.id = m.auth_user_id
+      where u.id = auth.uid()
+        and u.email_confirmed_at is not null
         and m.status in ('pending', 'active')
     );
 $$;
