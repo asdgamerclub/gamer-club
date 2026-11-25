@@ -6,6 +6,47 @@ const today=new Date(),maxDate=[today.getFullYear(),String(today.getMonth()+1).p
 $('nascita').max=maxDate;
 const draftKey='gc_signup_draft_v1',fields=['nome','cognome','nascita','residenza','telefono','email'];
 let user=null,busy=false;
+const wifiEntry = new URLSearchParams(location.search).get('wifi') === '1';
+const wifiKey = 'gc_guest_wifi_entry';
+let wantsWifi = wifiEntry;
+try {
+ if (wifiEntry) localStorage.setItem(wifiKey, '1');
+ wantsWifi ||= localStorage.getItem(wifiKey) === '1';
+} catch {}
+
+async function showWifiAccess() {
+ if (!wantsWifi) return;
+ const panel = $('wifi-access');
+ const status = $('wifi-status');
+ const credentials = $('wifi-credentials');
+ panel.hidden = false;
+ credentials.hidden = true;
+ status.textContent = 'Recupero le credenziali del Wi-Fi…';
+ try {
+  const {data, error} = await db.rpc('gc_guest_wifi_access');
+  const access = data?.[0];
+  if (error || !access?.ssid || !access?.password) throw Error('Wi-Fi non disponibile');
+  $('wifi-ssid').textContent = access.ssid;
+  $('wifi-password').value = access.password;
+  credentials.hidden = false;
+  status.textContent = 'Seleziona questa rete nelle impostazioni del telefono e incolla la password.';
+ } catch {
+  status.textContent = 'Accesso Wi-Fi non disponibile online. Chiedi al personale del Gamer Club.';
+ }
+}
+
+$('wifi-copy').addEventListener('click', async () => {
+ const password = $('wifi-password');
+ try {
+  await navigator.clipboard.writeText(password.value);
+  $('wifi-status').textContent = 'Password copiata. Apri le impostazioni Wi-Fi e incollala.';
+ } catch {
+  password.focus();
+  password.select();
+  $('wifi-status').textContent = 'Copia la password selezionata e incollala nelle impostazioni Wi-Fi.';
+ }
+});
+
 function message(s,err=false){$('feedback').textContent=s;$('feedback').style.color=err?'#ffb6b6':'#a8ddff';}
 function preview(){const first=$('nome').value.trim(),last=$('cognome').value.trim();$('card-name').textContent=(first+' '+last).trim()||'NOME COGNOME';const d=$('nascita').value?new Date($('nascita').value+'T00:00:00'):null;$('card-dob').textContent=d&&!Number.isNaN(d.getTime())?new Intl.DateTimeFormat('it-IT').format(d):'-- / -- / ----';}
 for(const field of ['nome','cognome','nascita'])$(field).addEventListener('input',preview);
@@ -21,7 +62,9 @@ async function init(){
   $('registration-state').textContent='La tua richiesta n. '+item.member_number+' risulta '+(names[item.request_status]||item.request_status)+'.';
   $('submit-request').disabled=true;$('submit-request').textContent='Richiesta già registrata';
   sessionStorage.removeItem(draftKey);
-  message('Non occorre registrarsi di nuovo. Quando la tessera è attiva, accedi da tessera.html.');return;
+  message('Non occorre registrarsi di nuovo. Quando la tessera è attiva, accedi da tessera.html.');
+  await showWifiAccess();
+  return;
  }
  $('email').value=user.email||'';
  $('email').readOnly=true;
@@ -52,7 +95,10 @@ $('join').addEventListener('submit',async e=>{
    const number=data?.[0]?.member_number;
    $('registration-state').textContent='Richiesta registrata: IN ATTESA DI APPROVAZIONE.';
    message('Richiesta inviata! '+(number?'Numero pratica: '+number+'. ':'')+'Il personale del Gamer Club dovrà approvarla per attivare la tessera.');
-   button.textContent='Richiesta inviata';return;
+   button.textContent='Richiesta inviata';
+   await showWifiAccess();
+   if (wantsWifi) $('wifi-access').scrollIntoView();
+   return;
   }
  }catch(error){
   const s=error?.message||'Errore sconosciuto';
